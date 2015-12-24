@@ -2,10 +2,14 @@
 #build ffmpeg for armv7,armv7s and uses lipo to create fat libraries and deletes the originals
 PLATFORM=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/
 
+CC='xcrun -sdk iphoneos clang'
+
 GENERAL="\
    --enable-cross-compile \
-   --arch=arm \
-   --cc=$PLATFORM/usr/bin/gcc"
+   --enable-pic \
+   --enable-vfp \
+   --enable-zlib \
+   --enable-static"
 
 MODULES="\
    --disable-filters \
@@ -65,47 +69,14 @@ AUDIO_ENCODERS="\
 MUXERS="\
   	--enable-muxer=avi"
 
-
 ./configure \
-    --prefix=ios/armv7 \
+    --prefix=ios/arm64 \
+    --cc="$CC" \
     $GENERAL \
-    --sysroot="$PLATFORM/SDKs/iPhoneOS6.1.sdk" \
-    --extra-cflags="-arch armv7 -mfpu=neon -miphoneos-version-min=6.0" \
+    --sysroot="$PLATFORM/SDKs/iPhoneOS.sdk" \
+    --extra-cflags="-arch arm64 -miphoneos-version-min=6.0" \
     --disable-shared \
-    --enable-static \
-    --extra-ldflags="-arch armv7 -isysroot $PLATFORM/SDKs/iPhoneOS6.1.sdk -miphoneos-version-min=6.0" \
-    --enable-zlib \
-    --disable-everything \
-    ${MODULES} \
-    ${VIDEO_DECODERS} \
-    ${AUDIO_DECODERS} \
-    ${VIDEO_ENCODERS} \
-    ${AUDIO_ENCODERS} \
-    ${DEMUXERS} \
-		${MUXERS} \
-    ${PARSERS} \
-    --target-os=darwin \
-    --enable-vfp \
-    --enable-neon \
-    --cpu=cortex-a8 \
-    --enable-pic
-
-make clean
-make && make install
-
-if [ "$?" != "0" ]; then
-    exit 1;
-fi
-
-./configure \
-    --prefix=ios/armv7s \
-    $GENERAL \
-    --sysroot="$PLATFORM/SDKs/iPhoneOS6.1.sdk" \
-    --extra-cflags="-arch armv7s -mfpu=neon -miphoneos-version-min=6.0" \
-    --disable-shared \
-    --enable-static \
-    --extra-ldflags="-arch armv7s -isysroot $PLATFORM/SDKs/iPhoneOS6.1.sdk -miphoneos-version-min=6.0" \
-    --enable-zlib \
+    --extra-ldflags="-arch arm64 -isysroot $PLATFORM/SDKs/iPhoneOS.sdk -miphoneos-version-min=6.0" \
     --disable-everything \
     ${MODULES} \
     ${VIDEO_DECODERS} \
@@ -116,10 +87,70 @@ fi
     ${MUXERS} \
     ${PARSERS} \
     --target-os=darwin \
-    --enable-vfp \
+    --arch=arm64
+    
+
+if [ "$?" != "0" ]; then
+    exit 1;
+fi
+
+make clean
+make && make install
+
+if [ "$?" != "0" ]; then
+    exit 1;
+fi
+
+./configure \
+    --prefix=ios/armv7 \
+    --cc="$CC" \
+    $GENERAL \
+    --sysroot="$PLATFORM/SDKs/iPhoneOS.sdk" \
+    --extra-cflags="-arch armv7 -mfpu=neon -miphoneos-version-min=6.0" \
+    --disable-shared \
+    --extra-ldflags="-arch armv7 -isysroot $PLATFORM/SDKs/iPhoneOS.sdk -miphoneos-version-min=6.0" \
+    --disable-everything \
+    ${MODULES} \
+    ${VIDEO_DECODERS} \
+    ${AUDIO_DECODERS} \
+    ${VIDEO_ENCODERS} \
+    ${AUDIO_ENCODERS} \
+    ${DEMUXERS} \
+		${MUXERS} \
+    ${PARSERS} \
+    --target-os=darwin \
+    --enable-neon \
+    --cpu=cortex-a8 \
+    --arch=arm
+
+make clean
+make && make install
+
+if [ "$?" != "0" ]; then
+    exit 1;
+fi
+
+./configure \
+    --prefix=ios/armv7s \
+    --cc="$CC" \
+    $GENERAL \
+    --sysroot="$PLATFORM/SDKs/iPhoneOS.sdk" \
+    --extra-cflags="-arch armv7s -mfpu=neon -miphoneos-version-min=6.0" \
+    --disable-shared \
+    --extra-ldflags="-arch armv7s -isysroot $PLATFORM/SDKs/iPhoneOS.sdk -miphoneos-version-min=6.0" \
+    --disable-everything \
+    ${MODULES} \
+    ${VIDEO_DECODERS} \
+    ${AUDIO_DECODERS} \
+    ${VIDEO_ENCODERS} \
+    ${AUDIO_ENCODERS} \
+    ${DEMUXERS} \
+    ${MUXERS} \
+    ${PARSERS} \
+    --target-os=darwin \
     --enable-neon \
     --cpu=cortex-a9 \
-    --enable-pic
+    --arch=arm
 
 make clean
 make && make install
@@ -131,19 +162,14 @@ fi
 cd ios
 mkdir -p universal/lib
 
-
-xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/libavformat.a -arch armv7s armv7s/lib/libavformat.a -output universal/lib/libavformat.a
-
-xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/libavutil.a -arch armv7s armv7s/lib/libavutil.a -output universal/lib/libavutil.a
-
-xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/libswresample.a -arch armv7s armv7s/lib/libswresample.a -output universal/lib/libswresample.a
-
-xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/libavcodec.a -arch armv7s armv7s/lib/libavcodec.a -output universal/lib/libavcodec.a
-
-xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/libswscale.a -arch armv7s armv7s/lib/libswscale.a -output universal/lib/libswscale.a
-
-xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/libavdevice.a -arch armv7s armv7s/lib/libavdevice.a -output universal/lib/libavdevice.a
+for LIB in libavformat.a libavutil.a libswresample.a libavcodec.a libswscale.a libavdevice.a
+do
+  xcrun -sdk iphoneos lipo -create -arch armv7 armv7/lib/$LIB \
+  -arch armv7s armv7s/lib/$LIB \
+  -arch arm64 arm64/lib/$LIB \
+  -output universal/lib/$LIB
+done
 
 cp -r armv7/include universal/
 
-rm -rf armv7 armv7s
+rm -rf armv7 armv7s arm64
